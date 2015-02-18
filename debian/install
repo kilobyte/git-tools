@@ -1,1 +1,2 @@
 git-restore-mtime	/usr/lib/git-core/
+git-clone-subset	/usr/lib/git-core/
