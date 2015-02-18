@@ -1,0 +1,5 @@
+git-restore-mtime (1.0.0-1) unstable; urgency=low
+
+  * Initial release (Closes: #778544)
+
+ -- Adam Borowski <kilobyte@angband.pl>  Mon, 16 Feb 2015 02:19:03 +0100

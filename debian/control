@@ -1,0 +1,25 @@
+Source: git-restore-mtime
+Section: vcs
+Priority: optional
+Maintainer: Adam Borowski <kilobyte@angband.pl>
+Build-Depends: debhelper (>= 9), help2man, python
+Standards-Version: 3.9.6
+Homepage: https://github.com/MestreLion/git-tools
+
+Package: git-restore-mtime
+Architecture: all
+Depends: ${misc:Depends}, python, git
+Description: set timestamps to the date of a file's last commit
+ This utility can set timestamps in a git checkout to the last commit that
+ changes a given file.  This is useful whenever meaningful mtimes are wanted,
+ as "last change" is better than "last checkout".  Use cases include syncing
+ timestamps on a web server's contents, preparing a release tarball, etc.
+ Pretty much, every scenario other than an unclean source tree where you're
+ about to type "make" without "make clean".
+ .
+ When called from a .git/hooks/post-checkout trigger, this is the equivalent
+ of Subversion's "use-commit-times".
+ .
+ Unlike metastore, git restore-mtime gives you only commit times rather than
+ the true original timestamp; on the other hand it works retroactively and
+ doesn't require a manual action by every contributor in every working copy.

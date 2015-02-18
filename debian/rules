@@ -1,0 +1,12 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@ 
+
+override_dh_auto_build-indep:
+	help2man -N --version-string "1.0.0" ./git-restore-mtime \
+	  -n "restore mtimes to the last commit's date" \
+	  >git-restore-mtime.1
+
+override_dh_auto_clean:
+	rm -f ./*.1
