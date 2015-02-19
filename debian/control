@@ -1,4 +1,4 @@
-Source: git-restore-mtime
+Source: git-tools
 Section: vcs
 Priority: optional
 Maintainer: Adam Borowski <kilobyte@angband.pl>
