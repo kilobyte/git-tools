@@ -1,4 +1,6 @@
 .*
 !.gitignore
 git-restore-mtime.1
+.pc
+debian/patches
 *~
