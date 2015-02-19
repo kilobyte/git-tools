@@ -23,3 +23,8 @@ Description: set timestamps to the date of a file's last commit
  Unlike metastore, git restore-mtime gives you only commit times rather than
  the true original timestamp; on the other hand it works retroactively and
  doesn't require a manual action by every contributor in every working copy.
+ .
+ This package includes three other utilities:
+  * git clone-subset - clones only some files from a repository (inc. history)
+  * git find-uncommitted-repos - recursively searches for unclean git repos
+  * git strip-merge - filters away some files during a merge
