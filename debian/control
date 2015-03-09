@@ -1,4 +1,4 @@
-Source: git-tools
+Source: git-mestrelion-tools
 Section: vcs
 Priority: optional
 Maintainer: Adam Borowski <kilobyte@angband.pl>
