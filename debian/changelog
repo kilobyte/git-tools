@@ -1,3 +1,9 @@
+git-mestrelion-tools (1.0.2-1) unstable; urgency=medium
+
+  * New upstream snapshot.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Mon, 28 Dec 2015 00:16:51 +0100
+
 git-mestrelion-tools (1.0.1-1) unstable; urgency=medium
 
   * New upstream snapshot.
