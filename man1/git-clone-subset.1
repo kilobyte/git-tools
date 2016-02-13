@@ -67,8 +67,8 @@ Pattern Examples:
 .br
 "*.h|src/|lib"
 .SH LIMITATIONS
-Renames are NOT followed. As a workaround, list the rename history with
-'git log --follow --name-status --format='%H' -- file | grep "^[RAD]"'
+Renames are NOT followed. As a workaround, list the rename history
+with 'git log --follow --name-status --format='%H' -- file | grep "^[RAD]"'
 and include all multiple names of a file in the pattern, as in
 "currentname|oldname|initialname". As a side efect, if a different
 file has taken place of an old name, it will be preserved too, and
