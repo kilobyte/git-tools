@@ -1,4 +1,4 @@
 git-restore-mtime	/usr/lib/git-core/
 git-clone-subset	/usr/lib/git-core/
-git-find-uncommited-repos	/usr/lib/git-core/
+git-find-uncommitted-repos	/usr/lib/git-core/
 git-strip-merge		/usr/lib/git-core/
