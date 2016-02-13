@@ -1,3 +1,11 @@
+git-mestrelion-tools (1.0.3-1) unstable; urgency=medium
+
+  * New upstream snapshot.
+  * Rename git-find-uncommited-repos to git-find-uncommitted-repos.
+  * Replace our manpages with those shipped by upstream.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Sat, 13 Feb 2016 11:12:02 +0100
+
 git-mestrelion-tools (1.0.2-1) unstable; urgency=medium
 
   * New upstream snapshot.
