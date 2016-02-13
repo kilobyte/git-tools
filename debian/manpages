@@ -1,1 +1,4 @@
-debian/*.1
+man1/git-clone-subset.1
+man1/git-find-uncommitted-repos.1
+man1/git-restore-mtime.1
+man1/git-strip-merge.1
