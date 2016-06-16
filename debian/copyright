@@ -3,11 +3,11 @@ Upstream-Name: git-tools
 Source: https://github.com/MestreLion/git-tools
 
 Files: *
-Copyright: 2012-2014 Rodrigo Silva (MestreLion)
+Copyright: 2012-2016 Rodrigo Silva (MestreLion)
 License: GPL-3+
 
 Files: debian/*
-Copyright: 2015 Adam Borowski <kilobyte@angband.pl>
+Copyright: 2015-2016 Adam Borowski <kilobyte@angband.pl>
 License: GPL-3+
 
 License: GPL-3+
