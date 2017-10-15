@@ -2,7 +2,7 @@ Source: git-mestrelion-tools
 Section: vcs
 Priority: optional
 Maintainer: Adam Borowski <kilobyte@angband.pl>
-Build-Depends: debhelper (>= 9), python
+Build-Depends: debhelper (>= 9), python3
 Standards-Version: 3.9.8
 Homepage: https://github.com/MestreLion/git-tools
 Vcs-Git: https://github.com/kilobyte/git-tools.git -b debian
@@ -10,7 +10,7 @@ Vcs-Browser: https://github.com/kilobyte/git-tools/tree/debian
 
 Package: git-restore-mtime
 Architecture: all
-Depends: ${misc:Depends}, python, git
+Depends: ${misc:Depends}, python3, git
 Description: set timestamps to the date of a file's last commit
  This utility can set timestamps in a git checkout to the last commit that
  changes a given file.  This is useful whenever meaningful mtimes are wanted,
