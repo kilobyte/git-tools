@@ -1,3 +1,10 @@
+git-mestrelion-tools (2017.10-2) unstable; urgency=medium
+
+  * Multi-Arch: foreign, Depends: python3:any.
+  * dh 11, R³.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Tue, 28 Aug 2018 01:44:09 +0200
+
 git-mestrelion-tools (2017.10-1) unstable; urgency=medium
 
   * New upstream release
