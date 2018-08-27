@@ -12,6 +12,7 @@ Vcs-Browser: https://github.com/kilobyte/git-tools/tree/debian
 Package: git-restore-mtime
 Architecture: all
 Depends: ${misc:Depends}, python3:any, git
+Multi-Arch: foreign
 Description: set timestamps to the date of a file's last commit
  This utility can set timestamps in a git checkout to the last commit that
  changes a given file.  This is useful whenever meaningful mtimes are wanted,
