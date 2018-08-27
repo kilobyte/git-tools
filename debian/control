@@ -3,6 +3,7 @@ Section: vcs
 Priority: optional
 Maintainer: Adam Borowski <kilobyte@angband.pl>
 Build-Depends: debhelper (>= 11~), python3
+Rules-Requires-Root: no
 Standards-Version: 4.1.1
 Homepage: https://github.com/MestreLion/git-tools
 Vcs-Git: https://github.com/kilobyte/git-tools.git -b debian
