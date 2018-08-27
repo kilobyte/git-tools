@@ -2,7 +2,7 @@ Source: git-mestrelion-tools
 Section: vcs
 Priority: optional
 Maintainer: Adam Borowski <kilobyte@angband.pl>
-Build-Depends: debhelper (>= 10), python3
+Build-Depends: debhelper (>= 11~), python3
 Standards-Version: 4.1.1
 Homepage: https://github.com/MestreLion/git-tools
 Vcs-Git: https://github.com/kilobyte/git-tools.git -b debian
