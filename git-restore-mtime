@@ -37,6 +37,15 @@ import logging as logger
 import argparse
 import time
 
+if os.utime in getattr(os, 'supports_follow_symlinks', []):
+    def lutime(path, times):
+        os.utime(path, times, follow_symlinks=False)
+else:
+    def lutime(path, times):
+        if os.path.islink(path):
+            raise Warning('Unable to update symlink: ' + path)
+        os.utime(path, times)
+
 parser = argparse.ArgumentParser(
     description='Restore original modification time of files based on '
                 'the date of the most recent commit that modified them. '
@@ -156,7 +165,7 @@ gitobj = subprocess.Popen(gitcmd + shlex.split('ls-files --full-name') +
                           ['--'] + args.pathspec,
                           stdout=subprocess.PIPE, universal_newlines=True)
 for line in gitobj.stdout:
-    lsfileslist.add(line.strip())
+    lsfileslist.add(os.path.normpath(line.strip()))
 
 # List files matching user pathspec, relative to current directory
 # git commands always print paths relative to work tree root
@@ -220,8 +229,7 @@ for line in gitobj.stdout:
     filespec = line[3:]
 
     # Make sure the slash matches the os; for Windows we need a backslash
-    if not os.sep == '/':
-        filespec = filespec.replace('/', os.sep)
+    filespec = os.path.normpath(filespec)
 
     if status in ['??', '!!']: # also safe to ignore: 'A ', ' M'
         # filespec can be a dir, so we must iterate on filelist
@@ -273,8 +281,7 @@ def parselog(merge=False, filterlist=[]):
             file = linetok[-1]
 
             # Make sure the slash matches the os; for Windows we need a backslash
-            if not os.sep == '/':
-                file = file.replace('/',os.sep)
+            file = os.path.normpath(file)
 
             if file.startswith('"'):
                 file = file[1:-1].decode("string-escape")
@@ -287,7 +294,7 @@ def parselog(merge=False, filterlist=[]):
                 files -= 1
                 try:
                     if not args.test:
-                        os.utime(os.path.join(workdir, file), (mtime, mtime))
+                        lutime(os.path.join(workdir, file), (mtime, mtime))
                     touches += 1
                 except Exception as e:
                     logger.error("ERROR: %s\n", e)
@@ -302,7 +309,7 @@ def parselog(merge=False, filterlist=[]):
                     dirlist.remove(dir)
                     try:
                         if not args.test:
-                            os.utime(os.path.join(workdir, dir), (mtime, mtime))
+                            lutime(os.path.join(workdir, dir), (mtime, mtime))
                         dirs -= 1
                     except Exception as e:
                         logger.error("ERROR: %s\n", e)
