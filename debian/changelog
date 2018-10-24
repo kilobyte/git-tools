@@ -1,3 +1,9 @@
+git-mestrelion-tools (2018.10-1) unstable; urgency=medium
+
+  * New upstream release.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Tue, 23 Oct 2018 23:52:37 +0200
+
 git-mestrelion-tools (2017.10-2) unstable; urgency=medium
 
   * Multi-Arch: foreign, Depends: python3:any.
