@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 #
 # git-restore-mtime - Change mtime of files based on commit date of last change
 #
@@ -22,8 +21,8 @@
 # date of the most recent commit that modified the file.
 #
 # Useful prior to generating release tarballs, so each file is archived with a
-# date that resembles the date when the file was actually last modified.
-# (assuming the actual modification date and its commit date are close)
+# date that is similar to the date when the file was actually last modified,
+# assuming the actual modification date and its commit date are close.
 
 # By default ignores all ignored and untracked files, and also refuses to work
 # on trees with uncommitted changes.
@@ -37,14 +36,8 @@ import logging as logger
 import argparse
 import time
 
-if os.utime in getattr(os, 'supports_follow_symlinks', []):
-    def lutime(path, times):
-        os.utime(path, times, follow_symlinks=False)
-else:
-    def lutime(path, times):
-        if os.path.islink(path):
-            raise Warning('Unable to update symlink: ' + path)
-        os.utime(path, times)
+
+# Command-line interface ######################################################
 
 parser = argparse.ArgumentParser(
     description='Restore original modification time of files based on '
@@ -58,7 +51,7 @@ parser.add_argument('--quiet', '-q',
 parser.add_argument('--verbose', '-v',
                     action="store_true",
                     help='print additional information for each processed file. '
-                    'Overwrites --quiet.')
+                    'Overrides --quiet.')
 
 parser.add_argument('--force', '-f',
                     action="store_true",
@@ -136,11 +129,54 @@ else:              level = logger.INFO
 logger.basicConfig(level=level, format='%(message)s')
 
 
+# Helper functions #########################################################
+
+def normalize(path):
+    """Normalize paths from git, handling non-ASCII characters.
+
+    Git for Windows, as of v1.7.10, stores paths as UTF-8 normalization form C. If path
+    contains non-ASCII or non-printable chars it outputs the UTF-8 in octal-escaped
+    notation, double-quoting the whole path. Double-quotes and backslashes are also escaped.
+
+    https://git-scm.com/docs/git-config#Documentation/git-config.txt-corequotePath
+    https://github.com/msysgit/msysgit/wiki/Git-for-Windows-Unicode-Support
+    https://github.com/git/git/blob/master/Documentation/i18n.txt
+
+    Example on git output, this function reverts this:
+    r'back\slash_double"quote_açaí' -> r'"back\\slash_double\"quote_a\303\247a\303\255"'
+    """
+    if path.startswith('"'):
+        # Python 2: path = path[1:-1].decode("string-escape")
+        # Python 3: https://stackoverflow.com/a/46650050/624066
+        path = (path[1:-1]                 # Remove enclosing double quotes
+                .encode('latin1')          # Convert to bytes, required 'unicode-escape'
+                .decode('unicode-escape')  # Perform the actual octal-escaping decode
+                .encode('latin1')          # 1:1 mapping to bytes, forming UTF-8 encoding
+                .decode('utf8'))           # Decode from UTF-8
+    # Make sure the slash matches the OS; for Windows we need a backslash
+    return os.path.normpath(path)
+
+
+def touch(path, mtime, test=False):
+    """The actual mtime update"""
+    if test: return
+    os.utime(path, (mtime, mtime), follow_symlinks=False)
+
+
+def git_ls_files(pathspec, gitcmd):
+    gitobj = subprocess.Popen(gitcmd + shlex.split('ls-files --full-name') +
+                              ['--'] + pathspec,
+                              stdout=subprocess.PIPE, universal_newlines=True)
+    for line in gitobj.stdout:
+        yield normalize(line.strip())
+
+
+# Main Logic ##################################################################
+
 # UI done, it's show time!
 start = time.time()  # yes, Wall time. CPU time is not realistic for users.
 
-lines = loglines = commits = totalfiles = \
-ignoredfiles = files = touches = errors = 0
+loglines = commits = touches = errors = dirtouches = direrrors = 0
 stepmissing = 100
 
 
@@ -160,17 +196,13 @@ except subprocess.CalledProcessError as e:
 
 
 # Get the files managed by git
-lsfileslist = set()
-gitobj = subprocess.Popen(gitcmd + shlex.split('ls-files --full-name') +
-                          ['--'] + args.pathspec,
-                          stdout=subprocess.PIPE, universal_newlines=True)
-for line in gitobj.stdout:
-    lsfileslist.add(os.path.normpath(line.strip()))
+lsfileslist = set(git_ls_files(args.pathspec, gitcmd))
 
 # List files matching user pathspec, relative to current directory
 # git commands always print paths relative to work tree root
 filelist = set()
 dirlist  = set()
+update_symlinks = bool(os.utime in getattr(os, 'supports_follow_symlinks', []))
 for path in args.pathspec:
 
     # Normalize user input so ./doc = doc/ = doc/../doc/. = doc
@@ -187,7 +219,11 @@ for path in args.pathspec:
         continue
 
     # file or symlink (to file, to dir or broken - git handles the same way)
-    if os.path.isfile(path) or os.path.islink(path):
+    islink = os.path.islink(path)
+    if os.path.isfile(path) or islink:
+        if islink and not update_symlinks:
+            logger.warn("WARNING: Skipping symlink, OS does not support update: %s", path)
+            continue
         # Always add them relative to worktree root
         filelist.add(os.path.relpath(path, workdir))
 
@@ -202,10 +238,10 @@ for path in args.pathspec:
                 files.remove('.git')
 
             if args.dirs:
-                dir = os.path.relpath(root, workdir)
-                if dir == '.':
-                    dir = ''
-                dirlist.add(dir)
+                dirname = os.path.relpath(root, workdir)
+                if dirname == '.':
+                    dirname = ''  # Like git does
+                dirlist.add(dirname)
 
             for file in files:
                 # Always add them relative to worktree root
@@ -213,9 +249,8 @@ for path in args.pathspec:
 
 filelist &= lsfileslist
 
-totaldirs  = dirs  = len(dirlist)
 totalfiles = files = len(filelist)
-logger.info("{:,} files to be processed in work dir".format(totalfiles))
+logger.info("{0:,} files to be processed in work dir".format(totalfiles))
 
 
 # Discard untracked and ignored files
@@ -228,18 +263,18 @@ for line in gitobj.stdout:
     status = line[:2]
     filespec = line[3:]
 
-    # Make sure the slash matches the os; for Windows we need a backslash
+    # Make sure the slash matches the OS; for Windows we need a backslash
     filespec = os.path.normpath(filespec)
 
-    if status in ['??', '!!']: # also safe to ignore: 'A ', ' M'
+    if status in ('??', '!!'):  # also safe to ignore: 'A ', ' M'
         # filespec can be a dir, so we must iterate on filelist
         for file in filelist:
-            if ( (filespec.endswith(os.sep) and  file.startswith(filespec)) or
-                 (file == filespec) ):
+            if (
+                (filespec.endswith(os.sep) and file.startswith(filespec))
+                or (file == filespec)
+            ):
                 logger.debug("Ignoring: %s", file)
                 ignoredlist.add(file)
-                files -= 1
-                ignoredfiles += 1
     elif not args.force:
         logger.critical(
          "ERROR: There are local changes in the working directory.\n"
@@ -249,22 +284,24 @@ for line in gitobj.stdout:
         gitobj.kill()
         sys.exit(1)
 
-if ignoredfiles:
+if ignoredlist:
     filelist -= ignoredlist
+    files = len(filelist)
     logger.info("{:,} files to process after ignoring {:,}"
-                "".format(files, ignoredfiles))
+                "".format(files, len(ignoredlist)))
 
 
 # Process the log until all files are 'touched'
 logger.debug("Line #\tLog #\tFiles\tmtime\tFile")
 def parselog(merge=False, filterlist=[]):
-    global loglines, dirs, files, touches, errors, commits
+    global loglines, commits, touches, errors, dirtouches, direrrors, files
 
     gitobj = subprocess.Popen(gitcmd + shlex.split('whatchanged --pretty={}'.format(args.timeformat)) +
                               (['-m'] if merge else []) +
                               (['--first-parent'] if args.first_parent else []) +
                               ['--'] + filterlist,
                               stdout=subprocess.PIPE, universal_newlines=True)
+    mtime = 0
     for line in gitobj.stdout:
         loglines += 1
         line = line.strip()
@@ -280,11 +317,8 @@ def parselog(merge=False, filterlist=[]):
             status = linetok[0]
             file = linetok[-1]
 
-            # Make sure the slash matches the os; for Windows we need a backslash
-            file = os.path.normpath(file)
-
-            if file.startswith('"'):
-                file = file[1:-1].decode("string-escape")
+            # Handles non-ASCII chars and OS path separator
+            file = normalize(file)
 
             if file in filelist:
                 logger.debug("%d\t%d\t%d\t%s\t%s",
@@ -293,26 +327,25 @@ def parselog(merge=False, filterlist=[]):
                 filelist.remove(file)
                 files -= 1
                 try:
-                    if not args.test:
-                        lutime(os.path.join(workdir, file), (mtime, mtime))
+                    touch(os.path.join(workdir, file), mtime, args.test)
                     touches += 1
                 except Exception as e:
-                    logger.error("ERROR: %s\n", e)
+                    logger.error("ERROR: %s", e)
                     errors += 1
 
             if args.dirs:
-                dir = os.path.dirname(file)
-                if status[-1] in ['A', 'D'] and dir in dirlist:
+                dirname = os.path.dirname(file)
+                if status[-1] in ('A', 'D') and dirname in dirlist:
                     logger.debug("%d\t%d\t-\t%s\t%s",
                                  loglines, commits,
-                                 time.ctime(mtime), dir)
-                    dirlist.remove(dir)
+                                 time.ctime(mtime), "{}/".format(dirname or '.'))
+                    dirlist.remove(dirname)
                     try:
-                        if not args.test:
-                            lutime(os.path.join(workdir, dir), (mtime, mtime))
-                        dirs -= 1
+                        touch(os.path.join(workdir, dirname), mtime, args.test)
+                        dirtouches += 1
                     except Exception as e:
-                        logger.error("ERROR: %s\n", e)
+                        logger.error("ERROR: %s", e)
+                        direrrors += 1
 
         # Date line
         else:
@@ -355,16 +388,16 @@ logger.info(
     "{:13,} commits evaluated"
     "".format(time.time()-start, loglines, commits))
 
-if touches != totalfiles:
-                 logger.info("{:13,} total files".format(totalfiles))
-if ignoredfiles: logger.info("{:13,} ignored files".format(ignoredfiles))
-if files:        logger.info("{:13,} missing files".format(files))
-if errors:       logger.info("{:13,} update errors".format(errors))
-
-logger.info("{:13,} updated files".format(touches))
-
 if args.dirs:
-    logger.info("{:13,} updated directories".format(totaldirs - dirs))
+    if direrrors: logger.info("{:13,} directory update errors".format(direrrors))
+    logger.info("{:13,} directories updated".format(dirtouches))
+
+if touches != totalfiles: logger.info("{:13,} files".format(totalfiles))
+if ignoredlist:           logger.info("{:13,} files ignored".format(len(ignoredlist)))
+if files:                 logger.info("{:13,} files missing".format(files))
+if errors:                logger.info("{:13,} file update errors".format(errors))
+
+logger.info("{:13,} files updated".format(touches))
 
 if args.test:
         logger.info("TEST RUN - No files modified!")
