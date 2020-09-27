@@ -3,3 +3,5 @@
 .pc
 debian/patches
 *~
+ref/
+git_restore_mtime.py
